@@ -1,0 +1,64 @@
+version: "3.8"
+
+services:
+  tscircuit-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tscircuit-mcp:latest
+    container_name: tscircuit-mcp
+    # Streamable HTTP on :3000 (host). Change the left port as needed.
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      TSCIRCUIT_MCP_OUTPUT_DIR: /data/output
+      TSCIRCUIT_MCP_REGISTRY_CACHE: /data/registry-cache
+      TSCIRCUIT_REGISTRY_API_BASE_URL: https://registry-api.tscircuit.com
+      # Set to 1 to forbid all registry network access (serve only the local
+      # cache). Leave unset for online-with-automatic-offline-fallback.
+      # TSCIRCUIT_MCP_OFFLINE: "1"
+      # Preview URLs embedded in tool results. Leave unset to auto-derive
+      # from the client's Host header; set explicitly when behind a proxy
+      # that rewrites Host, e.g. http://mcp.example.com
+      # TSCIRCUIT_MCP_PUBLIC_BASE_URL: http://localhost:3000
+    volumes:
+      # Persist rendered PCBs/SVGs, 3D models, BOM/PnP CSVs and CircuitJson
+      # on the host. Files survive container restarts/rebuilds, and the
+      # artifact index is re-hydrated from this directory at boot.
+      # If the container runs as uid 1000 (node), ensure the host dir is
+      # writable: `chown -R 1000:1000 ./output` (compose creates it as the
+      # invoking user, which normally matches).
+      - ./output:/data/output
+      # Persisted tscircuit registry components (prefetched @tsci/* bundles
+      # and their 3D assets) — keeps cached components usable across
+      # restarts and lets the container run fully offline.
+      - ./registry-cache:/data/registry-cache
+    healthcheck:
+      # bookworm-slim has no curl/wget; use node's fetch
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
+    restart: unless-stopped
+    # Give the circuit evaluator/autorouter some headroom; tune as needed
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+
+  # ------------------------------------------------------------------
+  # Optional: run the same image in stdio mode for local MCP clients.
+  #   docker compose run --rm tscircuit-mcp-stdio
+  # ------------------------------------------------------------------
+  tscircuit-mcp-stdio:
+    image: tscircuit-mcp:latest
+    container_name: tscircuit-mcp-stdio
+    entrypoint: ["node", "dist/index.js"]
+    stdin_open: true
+    volumes:
+      - ./output:/data/output
+    environment:
+      TSCIRCUIT_MCP_OUTPUT_DIR: /data/output
+    profiles: ["stdio"]

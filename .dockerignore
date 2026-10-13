@@ -1,0 +1,12 @@
+node_modules
+dist
+output
+*.log
+.git
+.gitignore
+tscircuit-repo
+scripts
+.dockerignore
+Dockerfile
+docker-compose.yml
+registry-cache

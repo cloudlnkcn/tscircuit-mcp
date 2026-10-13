@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+assets/viewer.js
+assets/model-viewer.js
+
+# Runtime artifacts
+output/
+registry-cache/
+
+# Logs & misc
+*.log
+.DS_Store
+
+# Upstream reference clones (dev only)
+kicad-viewer/

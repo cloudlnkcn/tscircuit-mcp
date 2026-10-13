@@ -1,0 +1,69 @@
+{
+  "name": "tscircuit-mcp-server",
+  "version": "0.1.0",
+  "description": "Full-featured MCP server for tscircuit: eval TSX circuits, render schematic/PCB SVG, export 3D/PnP, search registry. Supports Streamable HTTP + stdio.",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "node scripts/e2e-http.mjs",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/index.js",
+    "build": "esbuild src/index.ts --bundle --outfile=dist/index.js --format=esm --platform=node --packages=external --sourcemap && npm run build:viewer && npm run build:model-viewer",
+    "dev": "tsx src/index.ts",
+    "build:viewer": "esbuild viewer/entry.tsx --bundle --outfile=assets/viewer.js --format=iife --platform=browser --jsx=automatic --minify --alias:react=./node_modules/react --alias:react-dom=./node_modules/react-dom",
+    "build:model-viewer": "esbuild node_modules/@google/model-viewer/dist/model-viewer.js --bundle --outfile=assets/model-viewer.js --format=iife --platform=browser --minify"
+  },
+  "keywords": [
+    "mcp",
+    "tscircuit",
+    "pcb",
+    "electronics",
+    "model-context-protocol"
+  ],
+  "author": "cloudlnkcn",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cloudlnkcn/tscircuit-mcp.git"
+  },
+  "homepage": "https://github.com/cloudlnkcn/tscircuit-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/cloudlnkcn/tscircuit-mcp/issues"
+  },
+  "type": "module",
+  "bin": {
+    "tscircuit-mcp": "dist/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "@resvg/resvg-js": "^2.6.2",
+    "@tscircuit/alphabet": "^0.0.27",
+    "@tscircuit/checks": "^0.0.247",
+    "@tscircuit/eval": "^0.0.1596",
+    "@tscircuit/footprinter": "^0.0.437",
+    "@tscircuit/krt-wasm": "^0.1.9",
+    "circuit-json": "^0.0.526",
+    "circuit-json-to-bom-csv": "^0.0.19",
+    "circuit-json-to-gltf": "^0.0.152",
+    "circuit-json-to-pnp-csv": "^0.0.20",
+    "circuit-to-svg": "^0.0.447",
+    "express": "^4.22.3",
+    "kicad-to-circuit-json": "^0.0.142",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "tscircuit": "^0.0.2835",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@google/model-viewer": "^4.4.0",
+    "@tscircuit/pcb-viewer": "^1.11.428",
+    "@tscircuit/schematic-viewer": "^2.0.104",
+    "@types/express": "^4.17.25",
+    "@types/node": "^22.20.5",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  }
+}
