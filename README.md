@@ -1,138 +1,140 @@
 # tscircuit-mcp
 
+[English](README.md) | **简体中文**
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A518-brightgreen.svg)](https://nodejs.org/)
 [![Protocol](https://img.shields.io/badge/protocol-MCP-7c3aed.svg)](https://modelcontextprotocol.io/)
 
-基于 [tscircuit](https://github.com/tscircuit/tscircuit) 的**全功能 MCP (Model Context Protocol) Server**，让 AI 助手（Claude、Cursor、ZCode 等）能够直接编写、评估、检查、预览和导出 PCB 电路——从一行自然语言描述到可制造的交付物（BOM / 坐标文件 / 3D 模型），全程在一个会话内完成。
+A **full-featured MCP (Model Context Protocol) Server** built on [tscircuit](https://github.com/tscircuit/tscircuit), letting AI assistants (Claude, Cursor, ZCode, etc.) write, evaluate, check, preview and export PCB circuits directly — from a one-line natural-language description to manufacturable deliverables (BOM / pick-and-place files / 3D models), all within a single session.
 
-仓库地址：https://github.com/cloudlnkcn/tscircuit-mcp
+Repository: https://github.com/cloudlnkcn/tscircuit-mcp
 
-支持 **Streamable HTTP**（远程/容器部署）、**传统 HTTP+SSE**（旧客户端兼容）和 **stdio**（本地客户端）三种传输方式。
+Supports three transports: **Streamable HTTP** (remote/container deployment), **legacy HTTP+SSE** (older client compatibility), and **stdio** (local clients).
 
-## ✨ 特性总览
+## ✨ Feature Overview
 
-| | 特性 | 说明 |
+| | Feature | Description |
 |---|---|---|
-| 🔧 | **18 个工具 / 4 资源 / 2 Prompts** | 覆盖评估、DRC、渲染、3D 导出、制造交付、注册表检索、封装生成的完整链路 |
-| 🖥 | **交互式 PCB 查看器** | 内置 [tscircuit/pcb-viewer](https://github.com/tscircuit/pcb-viewer)，浏览器中缩放/平移/悬停检查，而非静态截图 |
-| 🖼 | **内嵌 PNG 渲染** | 所有渲染工具在 MCP 响应中直接返回 PNG，agent 无需二次请求即可"看到"结果 |
-| 📐 | **自动布局与布线** | 坐标属性全部可选，引擎按连通性自动完成元件布局、PCB 走线和原理图排布 |
-| 📴 | **离线可用** | 注册表组件本地缓存代理，联网预热后断网照常评估，适配隔离环境 |
-| 💬 | **会话式工作流** | 评估产生的电路保存在会话中，渲染/导出/检查链式调用无需重复传代码 |
-| 🐳 | **Docker 一键部署** | 镜像内置完整 tscircuit 工具链与 `tsci` CLI，产物 volume 持久化，重启不丢 |
-| 🔍 | **实测验证的元素清单** | 95 个合法 JSX 元素逐一对着评估器验证，避免 agent 使用静默无效元素 |
+| 🔧 | **18 tools / 4 resources / 2 prompts** | Full pipeline covering evaluation, DRC, rendering, 3D export, manufacturing deliverables, registry search and footprint generation |
+| 🖥 | **Interactive PCB viewer** | Bundled [tscircuit/pcb-viewer](https://github.com/tscircuit/pcb-viewer): zoom/pan/hover inspection in the browser, not static screenshots |
+| 🖼 | **Inline PNG rendering** | All render tools return PNGs directly in the MCP response — the agent "sees" the result without a second request |
+| 📐 | **Automatic layout & routing** | All coordinate props are optional; the engine places components by connectivity, routes PCB traces and arranges schematic symbols automatically |
+| 📴 | **Works offline** | Local registry cache proxy: prefetch components while online, keep evaluating while offline — ideal for isolated environments |
+| 💬 | **Session-based workflow** | Evaluated circuits persist in the session; render/export/check tools chain together without re-submitting code |
+| 🐳 | **One-command Docker deploy** | Image ships the full tscircuit toolchain and the `tsci` CLI; artifacts persisted via volumes, surviving restarts |
+| 🔍 | **Verified element catalog** | 95 valid JSX elements, each verified against the real evaluator — prevents agents from using silently-invalid elements |
 
-## 🛠 工具（18 个）
+## 🛠 Tools (18)
 
-### 核心评估与检查
+### Core evaluation & checking
 
-| 工具 | 说明 |
+| Tool | Description |
 |---|---|
-| `tscircuit_eval` | 评估 tscircuit TSX 电路代码 → CircuitJson 摘要 + 编译/运行时错误。支持多文件 `files` 映射与注册表自动导入（`@tsci/...`） |
-| `tscircuit_check_circuit` | DRC 设计规则检查：布局、走线、间距、庭院重叠、引脚规范、原理图检查、未连接端口等 |
+| `tscircuit_eval` | Evaluate tscircuit TSX circuit code → CircuitJson summary + compile/runtime errors. Supports multi-file `files` maps and automatic registry imports (`@tsci/...`) |
+| `tscircuit_check_circuit` | DRC design-rule checks: placement, routing, clearance, courtyard overlap, pin specification, schematic checks, unconnected ports, etc. |
 
-### 渲染与交互预览
+### Rendering & interactive preview
 
-| 工具 | 说明 |
+| Tool | Description |
 |---|---|
-| `tscircuit_render_schematic_svg` | 渲染原理图 SVG |
-| `tscircuit_render_pcb_svg` | 渲染 PCB 布局 SVG（支持暗色模式） |
-| `tscircuit_render_assembly_svg` | 渲染 3D 风格装配图 SVG |
-| `tscircuit_preview_kicad_footprint` | KiCad 封装（`.kicad_mod` s-expression）→ CircuitJson + 交互式查看器 URL（等价于 [tscircuit/kicad-viewer](https://github.com/tscircuit/kicad-viewer) 的 MCP 化） |
+| `tscircuit_render_schematic_svg` | Render a schematic SVG |
+| `tscircuit_render_pcb_svg` | Render a PCB layout SVG (dark mode supported) |
+| `tscircuit_render_assembly_svg` | Render a 3D-style assembly SVG |
+| `tscircuit_preview_kicad_footprint` | KiCad footprint (`.kicad_mod` s-expression) → CircuitJson + interactive viewer URL (the MCP equivalent of the [tscircuit/kicad-viewer](https://github.com/tscircuit/kicad-viewer) app) |
 
-### 3D 与制造交付
+### 3D & manufacturing deliverables
 
-| 工具 | 说明 |
+| Tool | Description |
 |---|---|
-| `tscircuit_export_gltf` | 导出 3D 板卡模型（GLB/glTF，含元件 3D 模型），返回 `<model-viewer>` 轨道预览链接 |
-| `tscircuit_export_bom_csv` | 导出物料清单（BOM CSV：位号、描述、厂商料号） |
-| `tscircuit_export_pnp_csv` | 导出贴片机坐标（Pick & Place CSV：位号、坐标、旋转、层） |
+| `tscircuit_export_gltf` | Export a 3D board model (GLB/glTF, with component 3D models); returns an `<model-viewer>` orbit-preview link |
+| `tscircuit_export_bom_csv` | Export a bill of materials (BOM CSV: reference designators, descriptions, manufacturer part numbers) |
+| `tscircuit_export_pnp_csv` | Export pick-and-place coordinates (PnP CSV: designator, x/y, rotation, layer) |
 
-### 会话与数据
+### Session & data
 
-| 工具 | 说明 |
+| Tool | Description |
 |---|---|
-| `tscircuit_get_circuit_json` | 获取会话电路的 CircuitJson（可按元素类型过滤、存盘） |
+| `tscircuit_get_circuit_json` | Get the session circuit's CircuitJson (filterable by element type, saveable to disk) |
 
-### 注册表与离线缓存
+### Registry & offline cache
 
-| 工具 | 说明 |
+| Tool | Description |
 |---|---|
-| `tscircuit_search_components` | 搜索 tscircuit 公共组件注册表（tscircuit.com） |
-| `tscircuit_get_component` | 获取注册表组件源码与 TypeScript 类型定义 |
-| `tscircuit_prefetch_components` | **预热注册表组件到本地缓存**（递归拉取 `@tsci/*` 依赖与 3D 资产），支持关键词批量，断网可用 |
-| `tscircuit_registry_cache_status` | 查看本地组件缓存（条目/大小/位置/离线模式状态） |
+| `tscircuit_search_components` | Search the public tscircuit component registry (tscircuit.com) |
+| `tscircuit_get_component` | Fetch a registry component's source code and TypeScript definitions |
+| `tscircuit_prefetch_components` | **Prefetch registry components into the local cache** (recursively pulls `@tsci/*` dependencies and 3D assets); supports keyword batches; usable offline |
+| `tscircuit_registry_cache_status` | Inspect the local component cache (entries/size/location/offline-mode status) |
 
-### 元素与文档
+### Elements & docs
 
-| 工具 | 说明 |
+| Tool | Description |
 |---|---|
-| `tscircuit_list_elements` | **全量合法元素清单**（95 个，逐一对着评估器实测验证，非类型推断） |
-| `tscircuit_get_element_docs` | 查询元素 props 文档（来自 @tscircuit/props 类型定义 + 高频元件手写文档） |
+| `tscircuit_list_elements` | **Complete catalog of valid elements** (95, each verified against the real evaluator, not type inference) |
+| `tscircuit_get_element_docs` | Look up element props documentation (from @tscircuit/props type definitions + hand-written docs for high-frequency components) |
 
-### 脚手架与封装
+### Scaffolding & footprints
 
-| 工具 | 说明 |
+| Tool | Description |
 |---|---|
-| `tscircuit_generate_footprint` | footprinter DSL 生成封装（`soic8`、`qfp48`、`pinrow4_p2.54mm`…），输出 CircuitJson 或 SVG |
-| `tscircuit_create_project` | 脚手架创建 tscircuit 项目（package.json + tsconfig + gitignore + 示例电路） |
+| `tscircuit_generate_footprint` | Generate footprints with the footprinter DSL (`soic8`, `qfp48`, `pinrow4_p2.54mm`…), outputting CircuitJson or SVG |
+| `tscircuit_create_project` | Scaffold a tscircuit project (package.json + tsconfig + gitignore + example circuit) |
 
-评估产生的电路保存在**会话**中，后续渲染/导出/检查工具无需重复传代码，支持链式迭代工作流。
+Evaluated circuits are stored in the **session**; subsequent render/export/check tools don't need the code re-submitted, enabling chained iterative workflows.
 
-## 🖥 交互式预览（真实查看器，而非静态图片）
+## 🖥 Interactive Preview (a real viewer, not static images)
 
-内置 [tscircuit/pcb-viewer](https://github.com/tscircuit/pcb-viewer)（React + canvas/WebGPU 交互式渲染器）：
+Bundles [tscircuit/pcb-viewer](https://github.com/tscircuit/pcb-viewer) (React + canvas/WebGPU interactive renderer):
 
-- **`GET /viewer?file=<circuit.json>`** — 全屏交互式 PCB 查看器：缩放、平移、悬停检查焊盘/走线/位号。自动探测 WebGPU，不可用时回退 canvas2d（无头浏览器/Firefox/Safari 也可用）
-- **`GET /view/<x>.circuit.json`** — CircuitJson 产物自动跳转到交互查看器
-- 所有渲染工具除返回内嵌 PNG 外，同时持久化 `<name>.circuit.json` 并附带 **Interactive PCB viewer** 链接，agent 可直接把交互预览 URL 转述给用户
-- 3D 模型：`tscircuit_export_gltf` 的 `/view/<x>.glb` 提供 `<model-viewer>` 轨道预览
+- **`GET /viewer?file=<circuit.json>`** — fullscreen interactive PCB viewer: zoom, pan, hover-inspect pads/traces/designators. Detects WebGPU automatically, falls back to canvas2d when unavailable (headless browsers/Firefox/Safari work too)
+- **`GET /view/<x>.circuit.json`** — CircuitJson artifacts redirect to the interactive viewer
+- All render tools, besides returning inline PNGs, also persist `<name>.circuit.json` with an **Interactive PCB viewer** link — the agent can relay the interactive preview URL straight to the user
+- 3D models: `tscircuit_export_gltf` serves `/view/<x>.glb` with an `<model-viewer>` orbit preview
 
-## 📐 布局自动化（无需手写坐标）
+## 📐 Layout Automation (no hand-written coordinates needed)
 
-tscircuit 引擎内置自动布局与自动布线：**`pcbX`/`pcbY`/`schX`/`schY` 全部是可选属性**。省略坐标时引擎自动完成元件布局（按连通性摆放、不重叠）、PCB 走线布线和原理图符号排布。手写坐标只在有明确布局意图时才需要（如去耦电容贴近 MCU）。
+The tscircuit engine has built-in automatic layout and routing: **`pcbX`/`pcbY`/`schX`/`schY` are all optional props**. When coordinates are omitted, the engine automatically places components (by connectivity, without overlap), routes PCB traces and arranges schematic symbols. Hand-written coordinates are only needed with explicit layout intent (e.g. decoupling caps close to the MCU).
 
-为让 agent 直接遵循此规范，MCP 提供三层保障：
+To make agents follow this convention, the MCP provides three layers of support:
 
-1. `tscircuit://docs/api-reference` 资源与 `create-circuit` prompt 都以"自动布局优先"为第一原则
-2. `tscircuit_list_elements` 让 agent 在写代码前确认合法元素名（避免 `<ground>` 这类静默无效元素——文档中明确警告）
-3. `tscircuit_get_element_docs` 提供每个元素的 props 签名，不再需要翻在线文档
+1. The `tscircuit://docs/api-reference` resource and the `create-circuit` prompt both put "auto-layout first" as the prime directive
+2. `tscircuit_list_elements` lets the agent confirm valid element names before writing code (avoiding silently-invalid elements like `<ground>` — explicitly warned about in the docs)
+3. `tscircuit_get_element_docs` provides each element's props signature — no need to browse online docs
 
-## 📴 离线可用（注册表组件本地化）
+## 📴 Offline-capable (localized registry components)
 
-`@tsci/owner.name` 组件通过**内置注册表缓存代理**实现断网可用：
+`@tsci/owner.name` components work offline through a **built-in registry cache proxy**:
 
-- 评估时所有 registry 请求都经过本地代理（`127.0.0.1` 内部端口）
-- **在线**：请求穿透上游并写入磁盘缓存（`TSCIRCUIT_MCP_REGISTRY_CACHE`，默认 `./registry-cache`）
-- **离线**（自动回退，或 `TSCIRCUIT_MCP_OFFLINE=1` 强制）：直接读缓存；未缓存的组件返回明确的"未缓存"错误
-- bundle 依赖的裸包（`react`、`react/jsx-runtime`）从本地 node_modules 注入评估器（避免 CDN 双 React 实例导致的静默渲染失败）；`tscircuit` 包通过 globalThis 桥接注入
+- All registry requests during evaluation go through a local proxy (internal `127.0.0.1` port)
+- **Online**: requests pass through to upstream and are written to a disk cache (`TSCIRCUIT_MCP_REGISTRY_CACHE`, default `./registry-cache`)
+- **Offline** (automatic fallback, or force with `TSCIRCUIT_MCP_OFFLINE=1`): reads directly from cache; uncached components return a clear "not cached" error
+- Bare packages required by bundles (`react`, `react/jsx-runtime`) are injected into the evaluator from local node_modules (avoiding silent render failures from dual React instances via CDN); the `tscircuit` package is injected via a globalThis bridge
 
-断网工作流：
+Offline workflow:
 
 ```bash
-# 1. 联网时预热（支持搜索批量：{"query": "esp32", "limit": 10}）
-#    agent 调用: tscircuit_prefetch_components {"components": ["rushabhcodes/ESP32-E-Reader"]}
+# 1. Prefetch while online (batch via search: {"query": "esp32", "limit": 10})
+#    agent call: tscircuit_prefetch_components {"components": ["rushabhcodes/ESP32-E-Reader"]}
 
-# 2. 断网后照常使用
-#    agent 调用: tscircuit_eval {"code": "import { EReaderBoard } from \"@tsci/rushabhcodes.ESP32-E-Reader\"\nexport default () => <EReaderBoard name=\"X\" />"}
+# 2. Keep using it after going offline
+#    agent call: tscircuit_eval {"code": "import { EReaderBoard } from \"@tsci/rushabhcodes.ESP32-E-Reader\"\nexport default () => <EReaderBoard name=\"X\" />"}
 ```
 
-缓存随 Docker volume `./registry-cache:/data/registry-cache` 持久化，容器重启/重建不丢。
+The cache persists via Docker volume `./registry-cache:/data/registry-cache` and survives container restarts/rebuilds.
 
-## 📦 资源（4 个）
+## 📦 Resources (4)
 
-- `tscircuit://docs/api-reference` — tscircuit TSX 语法速查（LLM 写代码必备）
-- `tscircuit://docs/examples` — 可直接评估的示例电路
-- `tscircuit://session/summary` — 当前会话电路摘要
-- `tscircuit://session/artifacts` — 本次会话产物索引
+- `tscircuit://docs/api-reference` — tscircuit TSX syntax cheat sheet (essential for LLM code writing)
+- `tscircuit://docs/examples` — example circuits that can be evaluated directly
+- `tscircuit://session/summary` — summary of the current session's circuit
+- `tscircuit://session/artifacts` — index of artifacts produced this session
 
-## 📝 Prompts（2 个）
+## 📝 Prompts (2)
 
-- `create-circuit` — 从自然语言描述到可用电路的引导工作流
-- `review-circuit` — 会话电路的审查与修复流程
+- `create-circuit` — guided workflow from natural-language description to a working circuit
+- `review-circuit` — review-and-fix workflow for the session circuit
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
 ```bash
 git clone https://github.com/cloudlnkcn/tscircuit-mcp.git
@@ -141,58 +143,58 @@ npm install
 npm run build
 ```
 
-### Docker Compose（推荐，镜像内置完整工具链）
+### Docker Compose (recommended — image ships the full toolchain)
 
-镜像在 `node:22-bookworm-slim` 上构建，除 MCP Server 外还预装了**完整 tscircuit 工具链**：
+The image builds on `node:22-bookworm-slim` and, besides the MCP Server, comes with the **complete tscircuit toolchain** preinstalled:
 
-- `tscircuit` 聚合包（全局，含 `tsci` CLI、core、eval、runframe、footprinter、checks 等全部官方子包）
-- 元器件库：`@tscircuit/footprinter`（封装库）、`schematic-symbols`（原理图符号库）、`@tscircuit/parts-engine`（JLCPCB/EasyEDA 零件引擎）
+- The `tscircuit` aggregate package (global; includes the `tsci` CLI, core, eval, runframe, footprinter, checks and all other official subpackages)
+- Component libraries: `@tscircuit/footprinter` (footprints), `schematic-symbols` (schematic symbol library), `@tscircuit/parts-engine` (JLCPCB/EasyEDA parts engine)
 
 ```bash
-docker compose up -d --build          # 构建并启动，监听 3000 端口
+docker compose up -d --build          # build and start, listening on port 3000
 curl http://127.0.0.1:3000/health     # {"ok":true,...}
 
-# 客户端接入
+# Client endpoints
 #   Streamable HTTP:  http://127.0.0.1:3000/mcp
 #   Legacy SSE:       http://127.0.0.1:3000/sse
 
-# 渲染/导出的产物（SVG/CSV/GLB/JSON）持久化在宿主机 ./output/
-docker compose exec tscircuit-mcp tsci --version   # 容器内可用 tsci CLI
+# Rendered/exported artifacts (SVG/CSV/GLB/JSON) persist on the host at ./output/
+docker compose exec tscircuit-mcp tsci --version   # tsci CLI available inside the container
 
-# stdio 模式（本地客户端通过 docker run -i 使用）
+# stdio mode (local clients via docker run -i)
 docker compose --profile stdio run --rm tscircuit-mcp-stdio
-# 或等价地（必须显式覆盖 command，否则默认启动 HTTP）：
+# or equivalently (must override command explicitly, otherwise HTTP starts by default):
 docker run -i --rm tscircuit-mcp:latest node dist/index.js
-# Claude Desktop 配置示例：
+# Claude Desktop config example:
 #   "command": "docker", "args": ["run","-i","--rm","tscircuit-mcp:latest","node","dist/index.js"]
 ```
 
-### 启动 HTTP 服务器（本机运行）
+### Start the HTTP server (local run)
 
 ```bash
-# Streamable HTTP，默认 0.0.0.0:3000
+# Streamable HTTP, defaults to 0.0.0.0:3000
 node dist/index.js --http
 
-# 自定义端口/主机
+# Custom port/host
 node dist/index.js --http --port 8080 --host 127.0.0.1
 ```
 
-端点：
+Endpoints:
 
-- `POST /mcp` — Streamable HTTP（MCP 当前规范），会话通过 `mcp-session-id` 头维持
-- `GET /mcp` / `DELETE /mcp` — 会话 SSE 流 / 终止会话
-- `GET /sse` + `POST /messages` — 传统 HTTP+SSE 传输（兼容旧客户端）
-- `GET /health` — 健康检查
+- `POST /mcp` — Streamable HTTP (current MCP spec); sessions maintained via the `mcp-session-id` header
+- `GET /mcp` / `DELETE /mcp` — session SSE stream / session termination
+- `GET /sse` + `POST /messages` — legacy HTTP+SSE transport (older client compatibility)
+- `GET /health` — health check
 
-### stdio 模式（Claude Desktop 等本地客户端）
+### stdio mode (Claude Desktop and other local clients)
 
 ```bash
-node dist/index.js            # 默认 stdio
+node dist/index.js            # stdio by default
 ```
 
-### 客户端配置
+### Client configuration
 
-**Claude Desktop / Cursor（stdio）** `claude_desktop_config.json`：
+**Claude Desktop / Cursor (stdio)** `claude_desktop_config.json`:
 
 ```json
 {
@@ -205,7 +207,7 @@ node dist/index.js            # 默认 stdio
 }
 ```
 
-**HTTP 远程接入**（ZCode / 任意 MCP HTTP 客户端）：
+**Remote HTTP access** (ZCode / any MCP HTTP client):
 
 ```json
 {
@@ -217,69 +219,69 @@ node dist/index.js            # 默认 stdio
 }
 ```
 
-### 环境变量
+### Environment variables
 
-| 变量 | 默认 | 说明 |
+| Variable | Default | Description |
 |---|---|---|
-| `TSCIRCUIT_MCP_OUTPUT_DIR` | `./output` | SVG/CSV/GLB 产物输出目录 |
-| `TSCIRCUIT_MCP_REGISTRY_CACHE` | `./registry-cache` | 注册表组件缓存目录 |
-| `TSCIRCUIT_MCP_OFFLINE` | （未设置） | `1` 强制离线：禁网、只用本地组件缓存 |
-| `TSCIRCUIT_REGISTRY_API_BASE_URL` | `https://registry-api.tscircuit.com` | 组件注册表 API |
-| `TSCIRCUIT_CJS_REGISTRY_URL` | `https://cjs.tscircuit.com` | 组件代码（CJS bundle）上游，可指向自建镜像 |
-| `TSCIRCUIT_MCP_PUBLIC_BASE_URL` | （自动从 Host 头推导） | 工具返回的预览 URL 前缀；反向代理改写 Host 时需显式设置 |
+| `TSCIRCUIT_MCP_OUTPUT_DIR` | `./output` | Output directory for SVG/CSV/GLB artifacts |
+| `TSCIRCUIT_MCP_REGISTRY_CACHE` | `./registry-cache` | Registry component cache directory |
+| `TSCIRCUIT_MCP_OFFLINE` | (unset) | `1` forces offline: no network, local component cache only |
+| `TSCIRCUIT_REGISTRY_API_BASE_URL` | `https://registry-api.tscircuit.com` | Component registry API |
+| `TSCIRCUIT_CJS_REGISTRY_URL` | `https://cjs.tscircuit.com` | Upstream for component code (CJS bundles); can point to a self-hosted mirror |
+| `TSCIRCUIT_MCP_PUBLIC_BASE_URL` | (auto-derived from the Host header) | Prefix for preview URLs returned by tools; set explicitly when a reverse proxy rewrites Host |
 
-## 🔄 典型工作流（agent 视角）
+## 🔄 Typical Workflow (agent's perspective)
 
-1. 读取 `tscircuit://docs/api-reference` 了解语法
-2. `tscircuit_eval` 提交 TSX 电路代码（错误会带回具体原因）
-3. `tscircuit_check_circuit` 跑 DRC，按提示修代码再 eval
-4. `tscircuit_render_pcb_svg` / `tscircuit_render_schematic_svg` —— **响应中直接内嵌 PNG，agent 立即看到渲染结果**，并拿到 `http://<host>/view/xxx.svg` 交互预览链接转述给用户
-5. `tscircuit_export_gltf` —— 导出 3D 模型，返回 `http://<host>/view/xxx.glb` 轨道预览链接
-6. `tscircuit_export_bom_csv` / `tscircuit_export_pnp_csv` 出制造交付物
+1. Read `tscircuit://docs/api-reference` to learn the syntax
+2. `tscircuit_eval` to submit TSX circuit code (errors come back with concrete causes)
+3. `tscircuit_check_circuit` to run DRC; fix the code per findings and re-eval
+4. `tscircuit_render_pcb_svg` / `tscircuit_render_schematic_svg` — **PNGs are embedded directly in the response, the agent sees the render immediately**, and gets a `http://<host>/view/xxx.svg` interactive preview link to relay to the user
+5. `tscircuit_export_gltf` — export the 3D model, returns a `http://<host>/view/xxx.glb` orbit-preview link
+6. `tscircuit_export_bom_csv` / `tscircuit_export_pnp_csv` for manufacturing deliverables
 
-## 🐳 Docker 部署与资产持久化
+## 🐳 Docker Deployment & Artifact Persistence
 
-- 所有产物（PCB/原理图/装配 SVG、GLB 3D 模型、BOM/PnP CSV、CircuitJson）都写入 `/data/output`
-- Compose 将其挂载到宿主机 `./output/`，**容器重启/重建后资产不丢**
-- 服务启动（及每个新 MCP 会话创建）时自动从该目录**重建产物索引**——重启后 `/files`、`tscircuit://session/artifacts` 与预览链接照常可用
-- 容器以 `node`(uid 1000) 运行；若宿主机目录属主不同，执行 `chown -R 1000:1000 ./output`
+- All artifacts (PCB/schematic/assembly SVGs, GLB 3D models, BOM/PnP CSVs, CircuitJson) are written to `/data/output`
+- Compose mounts it to the host's `./output/` — **artifacts survive container restarts/rebuilds**
+- On startup (and for each new MCP session) the artifact index is **rebuilt from that directory** — after a restart, `/files`, `tscircuit://session/artifacts` and preview links keep working
+- The container runs as `node` (uid 1000); if the host directory has a different owner, run `chown -R 1000:1000 ./output`
 
-## 💻 开发
+## 💻 Development
 
 ```bash
-npm run dev              # tsx 直接运行 src（stdio）
-npm run dev -- --http    # HTTP 模式
-npm run build            # esbuild 打包到 dist/（含 viewer 与 model-viewer 前端资源）
-npm run typecheck        # tsc --noEmit（node_modules 中第三方包发布的 .ts 源码有类型噪音，src/ 应为零错误）
-npm run test             # 启动 HTTP server 后跑 scripts/e2e-http.mjs（20 项协议级检查）
+npm run dev              # run src directly with tsx (stdio)
+npm run dev -- --http    # HTTP mode
+npm run build            # esbuild bundle to dist/ (incl. viewer & model-viewer frontend assets)
+npm run typecheck        # tsc --noEmit (third-party packages in node_modules shipping .ts sources produce type noise; src/ should have zero errors)
+npm run test             # starts an HTTP server then runs scripts/e2e-http.mjs (20 protocol-level checks)
 ```
 
-端到端测试：
+End-to-end test:
 
 ```bash
 node dist/index.js --http --port 3777 &
 node scripts/e2e-http.mjs
 ```
 
-## 🏗 架构
+## 🏗 Architecture
 
 ```
 src/
-├── index.ts              # CLI 入口（--http / stdio）
-├── server.ts             # McpServer 组装：18 工具 + 4 资源 + 2 prompts
+├── index.ts              # CLI entry (--http / stdio)
+├── server.ts             # McpServer assembly: 18 tools + 4 resources + 2 prompts
 ├── transports/
-│   ├── http.ts           # Express：Streamable HTTP + legacy SSE + /health + viewer
+│   ├── http.ts           # Express: Streamable HTTP + legacy SSE + /health + viewer
 │   └── stdio.ts          # StdioServerTransport
-├── tools/                # 每个工具一个模块
+├── tools/                # one module per tool
 ├── lib/
-│   ├── circuit-session.ts  # 每 MCP 会话的电路状态
-│   ├── summary.ts          # CircuitJson → LLM 友好摘要
-│   ├── output.ts           # 产物写入
-│   └── registry-client.ts  # registry-api.tscircuit.com 客户端
-└── docs/reference.ts     # 内置 tscircuit 语法文档（资源）
+│   ├── circuit-session.ts  # per-MCP-session circuit state
+│   ├── summary.ts          # CircuitJson → LLM-friendly summary
+│   ├── output.ts           # artifact writing
+│   └── registry-client.ts  # registry-api.tscircuit.com client
+└── docs/reference.ts     # built-in tscircuit syntax docs (resource)
 ```
 
-底层依赖：`@tscircuit/eval`（TSX→CircuitJson）、`circuit-to-svg`（原理图/PCB/装配 SVG）、`circuit-json-to-gltf`（3D）、`circuit-json-to-pnp-csv` / `circuit-json-to-bom-csv`（制造数据）、`@tscircuit/checks`（DRC）、`@tscircuit/footprinter`（封装）、`kicad-to-circuit-json`（KiCad 封装解析）、`@modelcontextprotocol/sdk`（MCP 协议）。
+Underlying dependencies: `@tscircuit/eval` (TSX→CircuitJson), `circuit-to-svg` (schematic/PCB/assembly SVG), `circuit-json-to-gltf` (3D), `circuit-json-to-pnp-csv` / `circuit-json-to-bom-csv` (manufacturing data), `@tscircuit/checks` (DRC), `@tscircuit/footprinter` (footprints), `kicad-to-circuit-json` (KiCad footprint parsing), `@modelcontextprotocol/sdk` (MCP protocol).
 
 ## License
 
